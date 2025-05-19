@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple URL Shortener</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 2rem;
+      }
+      input,
+      button {
+        padding: 0.5rem;
+        font-size: 1rem;
+        margin: 0.3rem;
+      }
+      .short-url {
+        margin-top: 1rem;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>URL Shortener</h1>
+    <input type="text" id="longUrl" placeholder="Enter a long URL" size="50" />
+    <button id="shortenBtn">Shorten</button>
+    <div class="short-url" id="result"></div>
+
+    <script>
+      // Copy function (global)
+      function copyToClipboard(text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => alert("Copied to clipboard!"))
+          .catch(() => alert("Failed to copy"));
+      }
+
+      // Shorten handler
+      document.getElementById("shortenBtn").addEventListener("click", () => {
+        const longUrl = document.getElementById("longUrl").value.trim();
+        if (!longUrl) return alert("Please enter a URL.");
+
+        const mappings = JSON.parse(
+          localStorage.getItem("urlMappings") || "{}"
+        );
+
+        const existing = Object.entries(mappings).find(
+          ([, val]) => val === longUrl
+        );
+        let shortCode = existing
+          ? existing[0]
+          : Math.random().toString(36).substring(2, 8);
+
+        mappings[shortCode] = longUrl;
+        localStorage.setItem("urlMappings", JSON.stringify(mappings));
+
+        const shortUrl = `${window.location.origin}${window.location.pathname}?code=${shortCode}`;
+        document.getElementById("result").innerHTML = `
+          Short URL: <a href="${shortUrl}" target="_blank">${shortUrl}</a>
+          <button onclick="copyToClipboard('${shortUrl}')">Copy</button>
+        `;
+      });
+
+      // Redirection handler
+      window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code) {
+          const mappings = JSON.parse(
+            localStorage.getItem("urlMappings") || "{}"
+          );
+          const longUrl = mappings[code];
+          if (longUrl) {
+            window.location.href = longUrl;
+          } else {
+            document.body.innerHTML = "<h2>Invalid or expired short link.</h2>";
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
